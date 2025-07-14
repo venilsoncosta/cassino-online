@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,10 +13,12 @@ import cassino.com.cassino_online.repository.UserRepository;
 
 @Service
 public class UserService {
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder; 
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -23,10 +26,11 @@ public class UserService {
         if (userRepository.findByEmail(user.getEmail()).isPresent()){
             throw new IllegalArgumentException("Email already exists");
         }
-
         if (userRepository.findByCpf(user.getCpf()).isPresent()){
             throw new IllegalArgumentException("CPF already exists");
         }
+
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
 
         return userRepository.save(user);
     }
@@ -48,12 +52,11 @@ public class UserService {
             if (!user.getCpf().equals(updateUser.getCpf()) && userRepository.findByCpf(updateUser.getCpf()).isPresent()){
                 throw new IllegalArgumentException("CPF already exists");
             }
-
             user.setUsername(updateUser.getUsername());
             user.setEmail(updateUser.getEmail());
             user.setCpf(updateUser.getCpf());
             user.setPhoneNumber(updateUser.getPhoneNumber());
-
+            
             return userRepository.save(user);
         }).orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
